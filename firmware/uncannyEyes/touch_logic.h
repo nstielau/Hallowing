@@ -48,7 +48,7 @@ inline int16_t touchEyeX(int8_t gaze) {
   return gaze < 0 ? 0 : (gaze > 0 ? 1023 : 512);
 }
 
-// Both blink pads together for 1.5 seconds select the next style. One change
+// Both middle pads together for 1.5 seconds select the next style. One change
 // per gesture: both pads must be released before the next long press can fire.
 class EyeStyleChord {
 public:
@@ -72,7 +72,29 @@ public:
     }
     return false;
   }
+  bool blocksDilation() const { return timing_ || latched_; }
 private:
   uint32_t startedAt_ = 0;
   bool timing_ = false, latched_ = false;
+};
+
+// Hold to sweep min -> max -> min, four seconds in each direction. Release
+// freezes both size and travel direction; no wall-clock catch-up on the next hold.
+// A normalized phase keeps the selected relative size when eye styles change.
+class PupilSweep {
+public:
+  void update(bool held, uint32_t now) {
+    if (held && wasHeld_) {
+      phase_ = (phase_ + uint32_t(now - lastUpdate_) % 8000) % 8000;
+    }
+    lastUpdate_ = now;
+    wasHeld_ = held;
+  }
+  uint16_t value(uint16_t minimum, uint16_t maximum) const {
+    const uint32_t amount = phase_ <= 4000 ? phase_ : 8000 - phase_;
+    return minimum + uint32_t(maximum - minimum) * amount / 4000;
+  }
+private:
+  uint32_t phase_ = 0, lastUpdate_ = 0;
+  bool wasHeld_ = false;
 };

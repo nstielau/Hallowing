@@ -45,7 +45,7 @@ if __name__ == '__main__':
     for column, (style, minimum, maximum) in enumerate([('human',120,720),('lizard',80,400),('goat',80,320)]):
         for row, scale in enumerate([minimum, (minimum+maximum)//2, maximum]):
             x, y = column*272+8, row*292+8
-            label = ['bright light','medium light','dim light'][row]
+            label = ['minimum pupil','medium pupil','maximum pupil'][row]
             draw.text((x,y), f'{style.title()} - {label}', fill='white')
             result.paste(render(style,scale).resize((256,256), Image.Resampling.NEAREST),(x,y+20))
     destination = Path(__file__).resolve().parents[1]/'docs/eye-styles.png'

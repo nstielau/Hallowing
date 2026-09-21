@@ -20,6 +20,7 @@ static uint16_t touchRaw[4] = {};
 static bool touchBlinkPending = false;
 static bool touchStylePending = false;
 static EyeStyleChord touchStyleChord;
+static PupilSweep touchPupilSweep;
 
 static void touchSetup() {
   // Leave the pads untouched during the brief startup calibration.
@@ -48,11 +49,15 @@ static void touchUpdate() {
     if (!touchEnabled[i]) continue;
     touchRaw[i] = touchSensors[i].measure();
     const bool pressed = touchPads[i].update(touchRaw[i], now);
-    if ((i == 1 || i == 2) && pressed) touchBlinkPending = true;
+    if (i == 1 && pressed) touchBlinkPending = true; // Left middle: blink.
   }
   if (touchStyleChord.update(touchPads[1].touched(), touchPads[2].touched(), now)) {
     touchStylePending = true;
   }
+  // Right middle adjusts size by itself. Reserve the two-pad chord for style
+  // selection, including a partial release after that gesture has fired.
+  touchPupilSweep.update(touchPads[2].touched() && !touchPads[1].touched() &&
+                        !touchStyleChord.blocksDilation(), now);
   // Opt-in by opening the serial monitor; never wait for a USB connection.
   if (Serial && uint32_t(now - lastReport) >= 1000 && Serial.availableForWrite() >= 32) {
     lastReport = now;

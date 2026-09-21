@@ -537,8 +537,7 @@ const uint8_t ease[] = { // Ease in/out curve for eye movements 3*t^2-2*t^3
 uint32_t timeOfLastBlink = 0L, timeToNextBlink = 0L;
 #endif
 
-void frame( // Process motion for a single frame of left or right eye
-  uint16_t        iScale) {     // Iris scale (0-1023) passed in
+void frame() { // Process touch, pupil size and motion for one frame.
   static uint32_t frames   = 0; // Used in frame rate calculation
   static uint8_t  eyeIndex = 0; // eye[] array counter
   int16_t         eyeX, eyeY;
@@ -551,6 +550,7 @@ void frame( // Process motion for a single frame of left or right eye
     touchStylePending = false;
     touchBlinkPending = true;
   }
+  const uint16_t iScale = touchPupilSweep.value(IRIS_MIN, IRIS_MAX);
   if ((command == '?' || command == 'n' || touchBlinkPending) && Serial) {
     static uint8_t lastReportedStyle = 255;
     if (command == '?' || activeEyeStyle != lastReportedStyle) {
@@ -558,7 +558,11 @@ void frame( // Process motion for a single frame of left or right eye
       lastReportedStyle = activeEyeStyle;
     }
   }
-  iScale = constrain(iScale, IRIS_MIN, IRIS_MAX);
+  if (command == '?' && Serial) {
+    Serial.print("PUPIL "); Serial.print(iScale);
+    Serial.print(" range="); Serial.print(IRIS_MIN);
+    Serial.print('-'); Serial.println(IRIS_MAX);
+  }
   uint32_t        t = micros(); // Time at start of function
 
   if(!(++frames & 255)) { // Every 256 frames...
@@ -645,7 +649,7 @@ void frame( // Process motion for a single frame of left or right eye
 #endif // JOYSTICK_X_PIN etc.
 
   // Blinking
-  // Either bottom pad requests one complete blink per touch. A request
+  // The left middle pad requests one complete blink per touch. A request
   // during an existing blink waits until it finishes; holding never repeats.
   if (touchBlinkPending && eye[eyeIndex].blink.state == NOBLINK) {
     eye[eyeIndex].blink.state = ENBLINK;
@@ -771,75 +775,7 @@ void frame( // Process motion for a single frame of left or right eye
   }
 }
 
-// AUTONOMOUS IRIS SCALING (if no photocell or dial) -----------------------
-
-#if !defined(LIGHT_PIN) || (LIGHT_PIN < 0)
-
-// Autonomous iris motion uses a fractal behavior to similate both the major
-// reaction of the eye plus the continuous smaller adjustments that occur.
-
-uint16_t oldIris = (IRIS_MIN + IRIS_MAX) / 2, newIris;
-
-void split( // Subdivides motion path into two sub-paths w/randimization
-  int16_t  startValue, // Iris scale value (IRIS_MIN to IRIS_MAX) at start
-  int16_t  endValue,   // Iris scale value at end
-  uint32_t startTime,  // micros() at start
-  int32_t  duration,   // Start-to-end time, in microseconds
-  int16_t  range) {    // Allowable scale value variance when subdividing
-
-  if(range >= 8) {     // Limit subdvision count, because recursion
-    range    /= 2;     // Split range & time in half for subdivision,
-    duration /= 2;     // then pick random center point within range:
-    int16_t  midValue = (startValue + endValue - range) / 2 + random(range);
-    uint32_t midTime  = startTime + duration;
-    split(startValue, midValue, startTime, duration, range); // First half
-    split(midValue  , endValue, midTime  , duration, range); // Second half
-  } else {             // No more subdivisons, do iris motion...
-    int32_t dt;        // Time (micros) since start of motion
-    int16_t v;         // Interim value
-    while((dt = (micros() - startTime)) < duration) {
-      v = startValue + (((endValue - startValue) * dt) / duration);
-      if(v < IRIS_MIN)      v = IRIS_MIN; // Clip just in case
-      else if(v > IRIS_MAX) v = IRIS_MAX;
-      frame(v);        // Draw frame w/interim iris scale value
-    }
-  }
-}
-
-#endif // !LIGHT_PIN
-
-// MAIN LOOP -- runs continuously after setup() ----------------------------
-
+// MAIN LOOP -- pupil size is controlled only by the middle touch pad.
 void loop() {
-
-#if defined(LIGHT_PIN) && (LIGHT_PIN >= 0) // Interactive iris
-
-  int16_t v = analogRead(LIGHT_PIN);       // Raw dial/photocell reading
-#ifdef LIGHT_PIN_FLIP
-  v = 1023 - v;                            // Reverse reading from sensor
-#endif
-  if(v < LIGHT_MIN)      v = LIGHT_MIN;  // Clamp light sensor range
-  else if(v > LIGHT_MAX) v = LIGHT_MAX;
-  v -= LIGHT_MIN;  // 0 to (LIGHT_MAX - LIGHT_MIN)
-#ifdef LIGHT_CURVE  // Apply gamma curve to sensor input?
-  v = (int16_t)(pow((double)v / (double)(LIGHT_MAX - LIGHT_MIN),
-    LIGHT_CURVE) * (double)(LIGHT_MAX - LIGHT_MIN));
-#endif
-  // And scale to iris range (IRIS_MAX is size at LIGHT_MIN)
-  v = map(v, 0, (LIGHT_MAX - LIGHT_MIN), IRIS_MAX, IRIS_MIN);
-#ifdef IRIS_SMOOTH // Filter input (gradual motion)
-  static int16_t irisValue = (IRIS_MIN + IRIS_MAX) / 2;
-  irisValue = ((irisValue * 15) + v) / 16;
-  frame(irisValue);
-#else // Unfiltered (immediate motion)
-  frame(v);
-#endif // IRIS_SMOOTH
-
-#else  // Autonomous iris scaling -- invoke recursive function
-
-  newIris = random(IRIS_MIN, IRIS_MAX);
-  split(oldIris, newIris, micros(), 10000000L, IRIS_MAX - IRIS_MIN);
-  oldIris = newIris;
-
-#endif // LIGHT_PIN
+  frame();
 }
