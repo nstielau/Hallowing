@@ -1,0 +1,6 @@
+.arduino/
+.tools/
+build/
+backups/
+.DS_Store
+__pycache__/
