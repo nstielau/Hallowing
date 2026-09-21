@@ -18,6 +18,8 @@ static TouchPad touchPads[4];
 static bool touchEnabled[4] = {};
 static uint16_t touchRaw[4] = {};
 static bool touchBlinkPending = false;
+static bool touchStylePending = false;
+static EyeStyleChord touchStyleChord;
 
 static void touchSetup() {
   // Leave the pads untouched during the brief startup calibration.
@@ -47,6 +49,9 @@ static void touchUpdate() {
     touchRaw[i] = touchSensors[i].measure();
     const bool pressed = touchPads[i].update(touchRaw[i], now);
     if ((i == 1 || i == 2) && pressed) touchBlinkPending = true;
+  }
+  if (touchStyleChord.update(touchPads[1].touched(), touchPads[2].touched(), now)) {
+    touchStylePending = true;
   }
   // Opt-in by opening the serial monitor; never wait for a USB connection.
   if (Serial && uint32_t(now - lastReport) >= 1000 && Serial.availableForWrite() >= 32) {

@@ -47,3 +47,32 @@ inline int8_t touchGaze(bool left, bool right) {
 inline int16_t touchEyeX(int8_t gaze) {
   return gaze < 0 ? 0 : (gaze > 0 ? 1023 : 512);
 }
+
+// Both blink pads together for 1.5 seconds select the next style. One change
+// per gesture: both pads must be released before the next long press can fire.
+class EyeStyleChord {
+public:
+  bool update(bool left, bool right, uint32_t now) {
+    if (!left && !right) {
+      timing_ = latched_ = false;
+      return false;
+    }
+    if (latched_) return false;
+    if (!left || !right) {
+      timing_ = false;
+      return false;
+    }
+    if (!timing_) {
+      timing_ = true;
+      startedAt_ = now;
+    }
+    if (uint32_t(now - startedAt_) >= 1500) {
+      latched_ = true;
+      return true;
+    }
+    return false;
+  }
+private:
+  uint32_t startedAt_ = 0;
+  bool timing_ = false, latched_ = false;
+};

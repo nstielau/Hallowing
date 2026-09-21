@@ -1,0 +1,56 @@
+{
+  "human_sclera": {
+    "raw_bytes": 80000,
+    "stored_bytes": 55970,
+    "width": 200,
+    "height": 200
+  },
+  "upper_lid": {
+    "raw_bytes": 16384,
+    "stored_bytes": 6822,
+    "width": 128,
+    "height": 128
+  },
+  "lower_lid": {
+    "raw_bytes": 16384,
+    "stored_bytes": 3865,
+    "width": 128,
+    "height": 128
+  },
+  "human_iris": {
+    "raw_bytes": 32768,
+    "stored_bytes": 32768,
+    "width": 256,
+    "height": 64
+  },
+  "human_polar": {
+    "raw_bytes": 12800,
+    "stored_bytes": 10678,
+    "width": 80,
+    "height": 80
+  },
+  "lizard_iris": {
+    "raw_bytes": 16384,
+    "stored_bytes": 16384,
+    "width": 256,
+    "height": 32
+  },
+  "lizard_polar": {
+    "raw_bytes": 32768,
+    "stored_bytes": 26762,
+    "width": 128,
+    "height": 128
+  },
+  "goat_iris": {
+    "raw_bytes": 16384,
+    "stored_bytes": 16384,
+    "width": 256,
+    "height": 32
+  },
+  "goat_polar": {
+    "raw_bytes": 32768,
+    "stored_bytes": 26739,
+    "width": 128,
+    "height": 128
+  }
+}

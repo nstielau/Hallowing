@@ -35,5 +35,22 @@ int main() {
   assert(touchEyeX(touchGaze(false, true)) == 1023);
   assert(touchEyeX(touchGaze(true, true)) == 512);
   assert(touchGaze(false, false) == 0);
+  EyeStyleChord chord;
+  assert(!chord.update(true, false, 0));
+  assert(!chord.update(true, false, 2000)); // One long touch still only blinks.
+  assert(!chord.update(true, true, 3000));
+  assert(!chord.update(true, true, 4499));
+  assert(chord.update(true, true, 4500));
+  assert(!chord.update(true, true, 9000)); // No repeated cycling while held.
+  assert(!chord.update(false, true, 9100));
+  assert(!chord.update(true, true, 12000)); // Partial release does not rearm.
+  assert(!chord.update(false, false, 13000));
+  assert(!chord.update(true, true, 14000));
+  assert(!chord.update(true, false, 14500)); // Interrupted chord cancels timer.
+  assert(!chord.update(true, true, 16000));
+  assert(chord.update(true, true, 17500));
+  chord.update(false, false, UINT32_MAX - 2000);
+  assert(!chord.update(true, true, UINT32_MAX - 1000));
+  assert(chord.update(true, true, 500)); // Timer wraparound also works.
   puts("Touch debounce, hold, release, retrigger, errors, rollover and gaze passed.");
 }

@@ -6,8 +6,13 @@ at commit `d2103e84aa33da9f6924885ebc06d880af8deeff`.
 
 The upstream sketch identifies its license as MIT and its author as Phil Burgess
 / Paint Your Dragon for Adafruit Industries. The original attribution is retained.
-The eye artwork and configuration are unchanged. This repository adds capacitive
-touch input and integrates it with the existing movement and blink state machines.
+The original human artwork remains unchanged in `graphics/defaultEye.h` and is
+stored losslessly in the generated `graphics/eye_assets.h`. `assets/upstream/`
+contains gzip-compressed, unmodified `dragonEye.h` and `goatEye.h` from the same
+commit, with source checksums in `source.json`. Their iris textures and pupil maps
+are resampled for this three-style build by `tools/build_assets.py`.
+The sketch and configuration integrate capacitive touch, style selection, and
+scanline decompression with the existing movement and blink state machines.
 
 MIT License
 

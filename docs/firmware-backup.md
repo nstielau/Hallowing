@@ -43,6 +43,12 @@ not access the separate 8 MB SPI flash.
 
 ## Future backups
 
+Before adding multiple eye styles, the complete, known-good human touch firmware
+was saved locally at `backups/human-touch-before-styles/Hallowing-touch.uf2`.
+Unlike the initial factory-firmware capture, this is a complete application image
+and can be restored with `tools/uf2.py flash` in physical bootloader mode.
+Its SHA-256 is `051379a1431ff289adebee61924af526e93506032a56bd72658f77e1c22c657c`.
+
 Physically double-press Reset, wait for `HALLOWBOOT`, then run `make backup`.
 This reads `CURRENT.UF2`, records a checksum, and validates that the application
 vector is present. It never triggers a software reset or writes to the board.

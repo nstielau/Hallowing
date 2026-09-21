@@ -1,0 +1,12 @@
+{
+  "upstream": "https://github.com/adafruit/Uncanny_Eyes",
+  "commit": "d2103e84aa33da9f6924885ebc06d880af8deeff",
+  "files": {
+    "dragonEye.h": {
+      "sha256": "9b87adfbe7c64403d50868cddd0f87017744517188e158181d4f4b5665114607"
+    },
+    "goatEye.h": {
+      "sha256": "081e9448399b51fa1f50607b1830bf546ab5da687e5c0ac93fd9bb8afc94a5b4"
+    }
+  }
+}

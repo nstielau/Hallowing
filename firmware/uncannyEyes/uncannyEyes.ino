@@ -429,6 +429,7 @@ void drawEye( // Renders one eye.  Inputs must be pre-clipped & valid.
   scleraXsave = scleraX + SCREEN_X_START; // Save initial X value to reset on each line
   irisY       = scleraY - (SCLERA_HEIGHT - IRIS_HEIGHT) / 2;
   for(screenY=SCREEN_Y_START; screenY<SCREEN_Y_END; screenY++, scleraY++, irisY++) {
+    prepareEyeRow(screenY, scleraY, irisY);
 #if defined(ARDUINO_ARCH_SAMD) || defined(ARDUINO_ARCH_NRF52)
  #ifdef PIXEL_DOUBLE
     uint32_t *ptr = &dmaBuf[dmaIdx][0];
@@ -439,21 +440,21 @@ void drawEye( // Renders one eye.  Inputs must be pre-clipped & valid.
     scleraX = scleraXsave;
     irisX   = scleraXsave - (SCLERA_WIDTH - IRIS_WIDTH) / 2;
     for(screenX=SCREEN_X_START; screenX<SCREEN_X_END; screenX++, scleraX++, irisX++) {
-      if((lower[screenY][screenX] <= lT) ||
-         (upper[screenY][screenX] <= uT)) {             // Covered by eyelid
+      if((lowerRow[screenX] <= lT) ||
+         (upperRow[screenX] <= uT)) {                  // Covered by eyelid
         p = 0;
       } else if((irisY < 0) || (irisY >= IRIS_HEIGHT) ||
                 (irisX < 0) || (irisX >= IRIS_WIDTH)) { // In sclera
-        p = sclera[scleraY][scleraX];
+        p = scleraPixel(scleraX);
       } else {                                          // Maybe iris...
-        p = polar[irisY][irisX];                        // Polar angle/dist
+        p = polarRow[irisX];                           // Polar angle/dist
         d = p & 0x7F;                                   // Distance from edge (0-127)
         if(d < irisThreshold) {                         // Within scaled iris area
           d = d * irisScale / 65536;                    // d scaled to iris image height
           a = (IRIS_MAP_WIDTH * (p >> 7)) / 512;        // Angle (X)
-          p = iris[d][a];                               // Pixel = iris
+          p = eyeStyle().iris[d * IRIS_MAP_WIDTH + a];  // Pixel = iris
         } else {                                        // Not in iris
-          p = sclera[scleraY][scleraX];                 // Pixel = sclera
+          p = scleraPixel(scleraX);                    // Pixel = sclera
         }
       }
 #if defined(ARDUINO_ARCH_SAMD) || defined(ARDUINO_ARCH_NRF52)
@@ -542,6 +543,22 @@ void frame( // Process motion for a single frame of left or right eye
   static uint8_t  eyeIndex = 0; // eye[] array counter
   int16_t         eyeX, eyeY;
   touchUpdate();
+  // Serial 'n' exercises the same transition for bench testing; '?' reports it.
+  const int command = Serial.available() ? Serial.read() : -1;
+  if (command == 'n') touchStylePending = true;
+  if (touchStylePending) {
+    nextEyeStyle();
+    touchStylePending = false;
+    touchBlinkPending = true;
+  }
+  if ((command == '?' || command == 'n' || touchBlinkPending) && Serial) {
+    static uint8_t lastReportedStyle = 255;
+    if (command == '?' || activeEyeStyle != lastReportedStyle) {
+      Serial.print("EYE_STYLE "); Serial.println(eyeStyle().name);
+      lastReportedStyle = activeEyeStyle;
+    }
+  }
+  iScale = constrain(iScale, IRIS_MIN, IRIS_MAX);
   uint32_t        t = micros(); // Time at start of function
 
   if(!(++frames & 255)) { // Every 256 frames...
@@ -723,8 +740,8 @@ void frame( // Process motion for a single frame of left or right eye
           sampleY = SCLERA_HEIGHT / 2 - (eyeY + IRIS_HEIGHT / 4);
   // Eyelid is slightly asymmetrical, so two readings are taken, averaged
   if(sampleY < 0) n = 0;
-  else            n = (upper[sampleY][sampleX] +
-                       upper[sampleY][SCREEN_WIDTH - 1 - sampleX]) / 2;
+  else            n = (upperPixel(sampleY, sampleX) +
+                       upperPixel(sampleY, SCREEN_WIDTH - 1 - sampleX)) / 2;
   uThreshold = (uThreshold * 3 + n) / 4; // Filter/soften motion
   // Lower eyelid doesn't track the same way, but seems to be pulled upward
   // by tension from the upper lid.
